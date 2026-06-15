@@ -2,9 +2,55 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="stylesheet" href="/src/frontend/styles.css" />
+    <link rel="stylesheet" href="/src/styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tauri App</title>
-    <script type="module" src="/src/frontend/main.ts" defer></script>
+    <script type="module" src="/src/main.ts" defer></script>
+		<style>
+      /* Crucial window resets for a seamless desktop widget */
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: transparent; /* Allows desktop wallpaper to show through */
+        user-select: none; /* Prevents text highlighting while dragging or coding */
+      }
+		</style>
   </head>
+	<body class="bg-transparent antialiased text-slate-200 selection:bg-transparent"> 
+    <div data-tauri-drag-region class="flex items-center justify-between px-4 py-2.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-xl shadow-xl w-full max-w-xl mx-auto mt-2 cursor-grab active:cursor-grabbing"> 
+      <div data-tauri-drag-region class="flex items-center space-x-3 min-w-0">
+        <span class="text-[10px] font-bold tracking-widest text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">
+          Anchor
+        </span>
+        <span id="current-task-title" class="text-sm font-medium truncate text-slate-100">
+          Loading active task...
+        </span>
+      </div>
+
+      <div data-tauri-drag-region class="flex items-center space-x-2.5 mx-4 shrink-0">
+        <span id="timer-countdown" class="text-base font-mono font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">
+          --:--
+        </span>
+        <span id="current-state-badge" class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase">
+          Idle
+        </span>
+      </div>
+
+      <div data-tauri-drag-region class="flex items-center space-x-4 shrink-0">
+        <span id="queue-count" class="text-xs text-slate-400 font-medium">
+          -- remaining
+        </span>
+        
+        <div class="flex items-center space-x-1.5 border-l border-slate-700/60 pl-3">
+          <button id="btn-pause" class="cursor-pointer p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-100 transition-colors" title="Pause/Resume">
+            <span class="text-xs">pause</span>
+          </button>
+          <button id="btn-skip" class="cursor-pointer p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-100 transition-colors" title="Skip to Next">
+            <span class="text-xs">continue</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>
