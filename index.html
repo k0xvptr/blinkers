@@ -1,56 +1,110 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="/src/styles.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
-    <script type="module" src="/src/main.ts" defer></script>
-		<style>
-      /* Crucial window resets for a seamless desktop widget */
-      html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background-color: transparent; /* Allows desktop wallpaper to show through */
-        user-select: none; /* Prevents text highlighting while dragging or coding */
-      }
-		</style>
-  </head>
-	<body class="bg-transparent antialiased text-slate-200 selection:bg-transparent"> 
-    <div data-tauri-drag-region class="flex items-center justify-between px-4 py-2.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-xl shadow-xl w-full max-w-xl mx-auto mt-2 cursor-grab active:cursor-grabbing"> 
-      <div data-tauri-drag-region class="flex items-center space-x-3 min-w-0">
-        <span class="text-[10px] font-bold tracking-widest text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">
-          Anchor
-        </span>
-        <span id="current-task-title" class="text-sm font-medium truncate text-slate-100">
-          Loading active task...
-        </span>
-      </div>
 
-      <div data-tauri-drag-region class="flex items-center space-x-2.5 mx-4 shrink-0">
-        <span id="timer-countdown" class="text-base font-mono font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">
-          --:--
-        </span>
-        <span id="current-state-badge" class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase">
-          Idle
-        </span>
-      </div>
+<head>
+	<meta charset="UTF-8" />
+	<link rel="stylesheet" href="/src/styles.css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Tauri App</title>
+	<script type="module" src="/src/main.ts" defer></script>
+	<style>
+		/* Crucial window resets for a seamless desktop widget */
+		html,
+		body {
+			margin: 10;
+			padding: 10;
+			overflow: hidden;
+			background-color: transparent;
+			/* Allows desktop wallpaper to show through */
+			user-select: none;
+			/* Prevents text highlighting while dragging or coding */
+		}
+	</style>
+</head>
 
-      <div data-tauri-drag-region class="flex items-center space-x-4 shrink-0">
-        <span id="queue-count" class="text-xs text-slate-400 font-medium">
-          -- remaining
-        </span>
-        
-        <div class="flex items-center space-x-1.5 border-l border-slate-700/60 pl-3">
-          <button id="btn-pause" class="cursor-pointer p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-100 transition-colors" title="Pause/Resume">
-            <span class="text-xs">pause</span>
-          </button>
-          <button id="btn-skip" class="cursor-pointer p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-100 transition-colors" title="Skip to Next">
-            <span class="text-xs">continue</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </body>
+<body class="bg-transparent antialiased text-slate-200 selection:bg-transparent p-2">
+
+	<div id="widget-container"
+		class="w-full max-w-md mx-auto bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-xl shadow-2xl transition-all duration-300 ease-in-out">
+
+		<div data-tauri-drag-region
+			class="flex items-center justify-between px-4 py-2.5 cursor-grab active:cursor-grabbing">
+
+			<div data-tauri-drag-region class="flex items-center space-x-2 min-w-0">
+				<span
+					class="text-[9px] font-bold tracking-widest text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">Anchor</span>
+				<span id="current-task-title" class="text-xs font-medium truncate text-slate-200">Loading task...</span>
+			</div>
+
+			<div data-tauri-drag-region class="flex items-center space-x-2 mx-2 shrink-0">
+				<span id="timer-countdown"
+					class="text-sm font-mono font-bold text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.2)]">--:--</span>
+				<span id="current-state-badge"
+					class="text-[9px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full uppercase">Idle</span>
+			</div>
+
+			<div class="flex items-center space-x-1 shrink-0 border-l border-slate-700/60 pl-2">
+				<button id="btn-pause"
+					class="cursor-pointer p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-100 transition-colors"
+					title="Pause/Resume">
+					<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+						<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+					</svg>
+				</button>
+
+				<button id="btn-skip"
+					class="cursor-pointer p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-100 transition-colors"
+					title="Skip">
+					<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+						<path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+					</svg>
+				</button>
+
+				<button id="btn-toggle-drawer"
+					class="cursor-pointer p-1 hover:bg-slate-800 rounded text-indigo-400 hover:text-indigo-300 transition-colors"
+					title="Create Container">
+					<svg id="icon-drawer" class="w-3.5 h-3.5 transition-transform duration-300" fill="none" stroke="currentColor"
+						stroke-width="2.5" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+					</svg>
+				</button>
+			</div>
+		</div>
+
+		<div id="creation-drawer"
+			class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out border-t border-slate-800/0">
+			<form id="form-create-container" class="p-4 space-y-3 bg-slate-950/40 rounded-b-xl">
+
+				<div>
+					<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Anchor
+						Objective</label>
+					<input type="text" id="input-task" required placeholder="e.g., Write Go Memory Allocator"
+						class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 placeholder:text-slate-500"/>
+				</div>
+
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Setup (Mins)</label>
+						<input type="number" id="input-setup" min="1" max="60" value="10"
+							class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500" />
+					</div>
+					<div>
+						<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Break (Mins)</label>
+						<input type="number" id="input-break" min="1" max="60" value="5"
+							class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500" />
+					</div>
+				</div>
+
+				<div class="flex justify-end pt-1">
+					<button type="submit"
+						class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-slate-100 text-xs font-semibold px-3 py-1.5 rounded transition-colors shadow-md">
+						Deploy Container
+					</button>
+				</div>
+			</form>
+		</div>
+
+	</div>
+</body>
+
 </html>
