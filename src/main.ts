@@ -26,7 +26,7 @@ let isDrawerOpen = false;
 // 4. Exact Pixel Dimensions for the Operating System Window Frame
 // (Width, Height) matching our Tailwind sizing layouts
 const COMPACT_SIZE = new LogicalSize(460, 68);
-const EXPANDED_SIZE = new LogicalSize(460, 260);
+const EXPANDED_SIZE = new LogicalSize(460, 500);
 
 // 5. Clean, Multi-OS SVG Path Definitions
 const playSVG = `<svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
@@ -39,92 +39,91 @@ let break_number = 0;
 
 // Force the OS window to match our tight, compact HUD bar styling when the page loads
 window.addEventListener('DOMContentLoaded', () => {
-  appWindow.setSize(COMPACT_SIZE);
+	appWindow.setSize(COMPACT_SIZE);
 });
 
-async function handleSubmit(type : string, list : string[]) {
- try {
-	 const ID : string = crypto.randomUUID();
-	 await invoke<void>("create_container", { containerType: type, tasks : list, id : ID });
- } catch (errorMessage) {
+async function handleSubmit(setup_list: string[], work_list: string[], break_list: string[]) {
+	try {
+		await invoke<void>("create_container", { setup: setup_list, tasks: work_list, breaks: break_list });
+	} catch (errorMessage) {
 		console.error("Command Failed: ", errorMessage);
 	}
-} 
+}
 
 /**
  * Handles the "Music Player" Play/Pause Style Toggle Behavior
  */
 function handlePlaybackToggle() {
-  isCurrentlyPaused = !isCurrentlyPaused;
+	isCurrentlyPaused = !isCurrentlyPaused;
 
-  if (isCurrentlyPaused) {
-    // STATE: App is Frozen
-    if (pauseBtn) {
-      pauseBtn.innerHTML = playSVG;
-      pauseBtn.title = "Resume Task";
-    }
-    if (stateBadge) {
-      stateBadge.innerText = 'PAUSED';
-      stateBadge.className = 'text-[9px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full uppercase';
-    }
+	if (isCurrentlyPaused) {
+		// STATE: App is Frozen
+		if (pauseBtn) {
+			pauseBtn.innerHTML = playSVG;
+			pauseBtn.title = "Resume Task";
+		}
+		if (stateBadge) {
+			stateBadge.innerText = 'PAUSED';
+			stateBadge.className = 'text-[9px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full uppercase';
+		}
 
-    console.log("IPC: Sending Pause Command down to Go Engine...");
-    // TODO: Connect Tauri IPC Bridge
-    // invoke("pause_timer");
+		console.log("IPC: Sending Pause Command down to Go Engine...");
+		// TODO: Connect Tauri IPC Bridge
+		// invoke("pause_timer");
 
-  } else {
-    // STATE: App is Running
-    if (pauseBtn) {
-      pauseBtn.innerHTML = pauseSVG;
-      pauseBtn.title = "Pause Task";
-    }
-    if (stateBadge) {
-      stateBadge.innerText = 'SETUP'; // Dynamic depending on the active container state
-      stateBadge.className = 'text-[9px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full uppercase';
-    }
+	} else {
+		// STATE: App is Running
+		if (pauseBtn) {
+			pauseBtn.innerHTML = pauseSVG;
+			pauseBtn.title = "Pause Task";
+		}
+		if (stateBadge) {
+			stateBadge.innerText = 'SETUP'; // Dynamic depending on the active container state
+			stateBadge.className = 'text-[9px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full uppercase';
+		}
 
-    console.log("IPC: Sending Resume Command down to Go Engine...");
-    // TODO: Connect Tauri IPC Bridge
-    // invoke("resume_timer");
-  }
+		console.log("IPC: Sending Resume Command down to Go Engine...");
+		// TODO: Connect Tauri IPC Bridge
+		// invoke("resume_timer");
+	}
 }
 
 /**
  * Handles the Slidable Drawer Container Animation & OS Window Resizing
  */
 function toggleDrawer() {
-  isDrawerOpen = !isDrawerOpen;
+	isDrawerOpen = !isDrawerOpen;
 
-  if (isDrawerOpen) {
-    // Expand Sequence: Grow OS window FIRST, then animate UI elements down
-    appWindow.setSize(EXPANDED_SIZE).then(() => {
-      if (drawer) {
-        drawer.style.maxHeight = '300px'; 
-        drawer.classList.remove('border-t-border-slate-800/0');
-        drawer.classList.add('border-t', 'border-slate-800/60');
-      }
-      // Rotate the plus icon (+) 45 degrees to turn it into a close cross (x)
-      if (drawerIcon) {
-        drawerIcon.classList.add('rotate-45');
-      }
-    });
-  } else {
-    // Collapse Sequence: Animate UI elements up, then shrink the OS window box
-    if (drawer) {
-      drawer.style.maxHeight = '0px';
-      drawer.classList.remove('border-t', 'border-slate-800/60');
-    }
-    if (drawerIcon) {
-      drawerIcon.classList.remove('rotate-45');
-    }
+	if (isDrawerOpen) {
+		// Expand Sequence: Grow OS window FIRST, then animate UI elements down
+		appWindow.setSize(EXPANDED_SIZE).then(() => {
+			if (drawer) {
+				drawer.style.maxHeight = '300px';
+				drawer.classList.remove('border-t-border-slate-800/0');
+				drawer.classList.add('border-t', 'border-slate-800/60');
+			}
+			// Rotate the plus icon (+) 45 degrees to turn it into a close cross (x)
+			if (drawerIcon) {
+				drawerIcon.classList.add('rotate-45');
+			}
+		});
+	} else {
+		// Collapse Sequence: Animate UI elements up, then shrink the OS window box
+		if (drawer) {
+			drawer.style.maxHeight = '0px';
+			drawer.classList.remove('border-t', 'border-slate-800/60');
+		}
+		if (drawerIcon) {
+			drawerIcon.classList.remove('rotate-45');
+		}
 
-    // Delay shrinking the native frame until the 300ms CSS height slide animation clears
-    setTimeout(() => {
-      if (!isDrawerOpen) {
-        appWindow.setSize(COMPACT_SIZE);
-      }
-    }, 300);
-  }
+		// Delay shrinking the native frame until the 300ms CSS height slide animation clears
+		setTimeout(() => {
+			if (!isDrawerOpen) {
+				appWindow.setSize(COMPACT_SIZE);
+			}
+		}, 300);
+	}
 }
 
 function addTask() {
@@ -165,9 +164,9 @@ function addBreak() {
 	if (break_number == 1) {
 		newInput.placeholder = n_str + '.' + '(Transition)';
 	} else {
-		newInput.placeholder = n_str + '.';
-		newInput.className = "w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 placeholder:text-slate-500";
+		newInput.placeholder = n_str + '.';	
 	}
+	newInput.className = "w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 placeholder:text-slate-500";
 	if (breakList) breakList.insertBefore(newInput, addBreakButton);
 }
 
@@ -181,46 +180,43 @@ if (addBreakButton) addBreakButton.addEventListener('click', addBreak);
 // Intercept form submissions to extract data structures and deploy them to Go
 if (createForm) {
 	createForm.addEventListener('submit', (e) => {
-    e.preventDefault(); // Stop standard browser page-reloads
-   	
+		e.preventDefault(); // Stop standard browser page-reloads
+
 		const formElement = e.currentTarget as HTMLFormElement;
-  	const formData = new FormData(formElement); 	 
-		const task_list = formData.getAll('objective-tasks') as string[]; 
+		const formData = new FormData(formElement);
+		const task_list = formData.getAll('objective-tasks') as string[];
 		const setup_list = formData.getAll('setup-tasks') as string[];
 		const break_list = formData.getAll('break-tasks') as string[];
 
-		// Call Rust Functions to store lists
-		const types : string[] = ["setup", "work", "break"];
-		const lists = [setup_list, task_list, break_list];
-		for (let i = 0; i < 3; ++i) {
-			handleSubmit(types[i], lists[i]);	
-		}
-		
+		// Call Rust Function to store lists
+		handleSubmit(setup_list, task_list, break_list);
+
+
 		console.log("Form Submitted!!");
 
-    // Reset and collapse the form drawer back up cleanly after submission
-    formElement.reset();
-		
+		// Reset and collapse the form drawer back up cleanly after submission
+		formElement.reset();
+
 		if (taskList) {
-      const extraTasks = taskList.querySelectorAll('input[name="objective-tasks"]');
-      extraTasks.forEach((input, index) => { if (index > 0) input.remove(); });
-    }
+			const extraTasks = taskList.querySelectorAll('input[name="objective-tasks"]');
+			extraTasks.forEach((input) => { input.remove(); });
+		}
 
-    if (setupList) {
-      const extraSetups = setupList.querySelectorAll('input[name="setup-tasks"]');
-      extraSetups.forEach((input, index) => { if (index > 0) input.remove(); });
-    }
+		if (setupList) {
+			const extraSetups = setupList.querySelectorAll('input[name="setup-tasks"]');
+			extraSetups.forEach((input) => { input.remove(); });
+		}
 
-    if (breakList) {
-      const extraBreaks = breakList.querySelectorAll('input[name="break-tasks"]');
-      extraBreaks.forEach((input, index) => { if (index > 0) input.remove(); });
-    }
+		if (breakList) {
+			const extraBreaks = breakList.querySelectorAll('input[name="break-tasks"]');
+			extraBreaks.forEach((input) => { input.remove(); });
+		}
 
 		task_number = 0;
 		setup_number = 0;
 		break_number = 0;
-    toggleDrawer();
-  });
+		toggleDrawer();
+	});
 }
 
 
