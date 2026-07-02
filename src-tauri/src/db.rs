@@ -1,8 +1,6 @@
 use crate::containers::FocusBlock;
 use sqlx::sqlite::{SqlitePoolOptions, SqliteConnectOptions, SqlitePool};
-use std::fs;
 use tauri::State;
-use tauri::{AppHandle, Manager};
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -10,22 +8,9 @@ pub struct DbState {
     pub pool: SqlitePool,
 }
 
-pub async fn db_init(app_handle: &AppHandle) -> Result<DbState, Box<dyn std::error::Error>> {
-    let app_dir = app_handle.path().app_data_dir()?;
+pub async fn db_init() -> Result<DbState, Box<dyn std::error::Error>> { 
 
-    if !app_dir.exists() {
-        fs::create_dir_all(&app_dir)?;
-    }
-
-    let mut db_path = app_dir.clone();
-    db_path.push("blinkers.db");
-    let db_url = format!("sqlite:{}", db_path.to_string_lossy());
-
-    if !db_path.exists() {
-        fs::File::create(&db_path)?;
-    }
-
-    let connection_options = SqliteConnectOptions::from_str(&db_url)?
+    let connection_options = SqliteConnectOptions::from_str("sqlite://blinkers.db")?
     .create_if_missing(true)
     .busy_timeout(Duration::from_secs(5));
 
@@ -38,16 +23,23 @@ pub async fn db_init(app_handle: &AppHandle) -> Result<DbState, Box<dyn std::err
         "CREATE TABLE IF NOT EXISTS focus_blocks (
             id TEXT PRIMARY KEY NOT NULL,
             is_completed INTEGER NOT NULL
-        );
-        
-        CREATE TABLE IF NOT EXISTS containers (
+        );" 
+    )
+    .execute(&pool)
+    .await?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS containers (
             id TEXT PRIMARY KEY NOT NULL,
             focus_block_id TEXT NOT NULL,
             container_type TEXT NOT NULL,
-            quality INTEGER,
+            order_index INTEGER NOT NULL,
             notes TEXT,
-            is_active INTEGER NOT NULL
-        );",
+            setup_tasks TEXT,     
+            primary_tasks TEXT,    
+            backup_tasks TEXT,     
+            break_tasks TEXT
+        );"
     )
     .execute(&pool)
     .await?;
@@ -79,13 +71,13 @@ pub async fn insert_container(
         let serialized_type = serde_json::to_string(&container.container_type)
             .map_err(|e| e.to_string())?;
         sqlx::query(
-            "INSERT INTO containers (id, focus_block_id, container_type, quality, notes)
+            "INSERT INTO containers (id, focus_block_id, container_type, order_index, notes)
             VALUES ($1, $2, $3, $4, $5)",
         )
         .bind(&container.id)
         .bind(&focus_block.id)
         .bind(serialized_type)
-        .bind(container.quality)
+        .bind(container.order_index)
         .bind(&container.notes)
         .execute(&mut *tx)
         .await
@@ -93,4 +85,16 @@ pub async fn insert_container(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+async fn get_next_order_index(pool: tauri::State<'_, sqlx::SqlitePool>) -> Result<i32, String> {
+    // 1. Execute query and store the raw result in a variable
+    let max_index: i32 = sqlx::query_scalar::<_, i32>("SELECT COALESCE(MAX(order_index), -1) as \"order_index: i32\" FROM containers")
+        .fetch_one(&*pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 2. Return the next index in line
+    Ok(max_index + 1)
 }

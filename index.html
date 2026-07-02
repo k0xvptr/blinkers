@@ -10,9 +10,7 @@
 	<style>
 		/* Crucial window resets for a seamless desktop widget */
 		html,
-		body {
-			margin: 10;
-			padding: 10;
+		body {	
 			overflow: hidden;
 			background-color: transparent;
 			/* Allows desktop wallpaper to show through */
@@ -60,11 +58,17 @@
 					</svg>
 				</button>
 
+				<button id="order-containers" 
+					class="cursor-pointer p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-100 transition-colors"
+					title="Containers">
+
+				</button>
+
 				<button id="btn-toggle-drawer"
 					class="cursor-pointer p-1 hover:bg-slate-800 rounded text-indigo-400 hover:text-indigo-300 transition-colors select-none"
 					title="Create Container">
-					<svg id="icon-drawer" class="w-3.5 h-3.5 transition-transform duration-300 pointer-events-none" fill="none" stroke="currentColor"
-						stroke-width="2.5" viewBox="0 0 24 24">
+					<svg id="icon-drawer" class="w-3.5 h-3.5 transition-transform duration-300 pointer-events-none" fill="none"
+						stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
 					</svg>
 				</button>
@@ -73,30 +77,91 @@
 
 		<div id="creation-drawer"
 			class="h-auto max-h-[1000px] overflow-y-auto transition-all duration-300 ease-in-out border-t border-slate-800/0">
-			<form id="form-create-container" class="p-4 space-y-3 bg-slate-950/40 rounded-b-xl">
 
-				<div id="tasks" class="flex flex-col gap-2">
-					<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Objective Tasks</label>
-					<button id="add-task" type="button" class="rounded-md bg-transparent text-[10px] block font-bold hover:bg-slate-800 hover:text-white text-gray-600 py-1.5 transition duration-300 ease-in-out 
-						border border-slate-500 focus:outline-none w-full" title="Create Breaks">
-							+ Task
+			<div class="w-full max-w-md mx-auto p-4 bg-slate-900 rounded-xl border border-slate-800">
+				<div
+					class="relative flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 selection:bg-transparent">
+
+					<div id="tab-overlay"
+						class="absolute top-1 bottom-1 left-1 w-[calc(25%-4px)] bg-indigo-600 rounded-md shadow-md transition-all duration-300 ease-in-out z-0">
+					</div>
+
+					<button id="deep-work" type="button"
+						class="relative flex-1 py-2 text-center text-xs font-medium text-slate-100 z-10 focus:outline-none transition-colors duration-200">
+						🧠 Deep
+					</button>
+
+					<button id="routine-block" type="button"
+						class="relative flex-1 py-2 text-center text-xs font-medium text-slate-400 z-10 focus:outline-none transition-colors duration-200 hover:text-slate-200">
+						⚙️ Routine
+					</button>
+
+					<button id="reset-block" type="button"
+						class="relative flex-1 py-2 text-center text-xs font-medium text-slate-400 z-10 focus:outline-none transition-colors duration-200 hover:text-slate-200">
+						🧹 Reset
+					</button>
+
+					<button id="recharge-block" type="button"
+						class="relative flex-1 py-2 text-center text-xs font-medium text-slate-400 z-10 focus:outline-none transition-colors duration-200 hover:text-slate-200">
+						🔋 Recharge
+					</button>
+
+				</div>
+			</div>
+			<form id="form-create-container" class="p-4 space-y-4 bg-slate-950/40 rounded-b-xl">
+
+				<div id="tasks-section" class="flex flex-col gap-2">
+					<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Objective
+						Tasks</label>
+					<div id="tasks" class="flex flex-col gap-2">
+					</div>
+					<button id="add-task" type="button"
+						class="rounded-md bg-transparent text-[10px] block font-bold hover:bg-slate-800 hover:text-white text-gray-600 py-1.5 transition duration-300 ease-in-out border border-slate-500 focus:outline-none w-full"
+						title="Create Tasks">
+						+ Task
 					</button>
 				</div>
 
-				<div class="grid grid-cols-2 gap-3">
-					<div id="setup" class="flex flex-col gap-2">
+				<div id="grid-section" class="grid grid-cols-2 gap-3">
+					<div class="flex flex-col gap-2">
 						<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Setup Tasks</label>
-						<button id="add-setup" type="button" class="rounded-md bg-transparent text-[10px] block font-bold hover:bg-slate-800 hover:text-white text-gray-600 py-1.5 transition duration-300 ease-in-out 
-							border border-slate-500 focus:outline-none w-full" title="Create Breaks">
+						<div id="setup" class="flex flex-col gap-2">
+						</div>
+						<button id="add-setup" type="button"
+							class="rounded-md bg-transparent text-[10px] block font-bold hover:bg-slate-800 hover:text-white text-gray-600 py-1.5 transition duration-300 ease-in-out border border-slate-500 focus:outline-none w-full"
+							title="Create Setup">
 							+ Setup
 						</button>
 					</div>
-					<div id="breaks" class="flex flex-col gap-2">
+
+					<div class="flex flex-col gap-2">
 						<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Break Tasks</label>
-						<button id="add-break" type="button" class="rounded-md bg-transparent text-[10px] block font-bold hover:bg-slate-800 hover:text-white text-gray-600 py-1.5 transition duration-300 ease-in-out 
-							border border-slate-500 focus:outline-none w-full" title="Create Breaks">
+						<div id="breaks" class="flex flex-col gap-2">
+						</div>
+						<button id="add-break" type="button"
+							class="rounded-md bg-transparent text-[10px] block font-bold hover:bg-slate-800 hover:text-white text-gray-600 py-1.5 transition duration-300 ease-in-out border border-slate-500 focus:outline-none w-full"
+							title="Create Breaks">
 							+ Break
 						</button>
+					</div>
+				</div>
+
+				<div id="duration-section" class="grid grid-cols-2 gap-3 hidden">
+					<div class="flex flex-col gap-1.5">
+						<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Target Time</label>
+						<div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded px-2 py-1">
+							<input type="number" id="recharge-duration" min="5" max="180" value="30"
+								class="w-full bg-transparent text-xs text-slate-200 font-mono focus:outline-none" />
+							<span class="text-[10px] text-slate-500 font-semibold uppercase">Min</span>
+						</div>
+					</div>
+					<div class="flex flex-col gap-1.5">
+						<label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Max Cap Limit</label>
+						<div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded px-2 py-1">
+							<input type="number" id="recharge-max-time" min="5" max="240" value="45"
+								class="w-full bg-transparent text-xs text-slate-200 font-mono focus:outline-none" />
+							<span class="text-[10px] text-slate-500 font-semibold uppercase">Min</span>
+						</div>
 					</div>
 				</div>
 
@@ -108,7 +173,6 @@
 				</div>
 			</form>
 		</div>
-
 	</div>
 </body>
 </html>

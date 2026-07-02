@@ -1,6 +1,39 @@
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 
+interface BaseBlock {
+  id: string;
+  title: string;
+  type: 'deep' | 'routine' | 'reset' | 'recharge';
+}
+
+interface DeepWorkBlock extends BaseBlock {
+  type: 'deep';
+  setupTasks: string[];
+  objectiveTasks: string[];
+  breakTasks: string[];
+  isStaticAnchor: boolean;
+  startTime?: string; // e.g., "16:00" if locked
+}
+
+interface RoutineBlock extends BaseBlock {
+  type: 'routine';
+  setupTasks: string[];
+  objectiveTasks: string[];
+}
+
+interface ResetBlock extends BaseBlock {
+  type: 'reset';
+  objectiveTasks: string[];
+  targetDurationMins: number;
+}
+
+interface RechargeBlock extends BaseBlock {
+  type: 'recharge';
+  targetDurationMins: number;
+  maxDurationCapMins: number;
+}
+
 // 1. Initialize the Native Tauri Window instance
 const appWindow = getCurrentWindow();
 
@@ -11,13 +44,26 @@ const drawer = document.getElementById('creation-drawer');
 const drawerIcon = document.getElementById('icon-drawer');
 const createForm = document.getElementById('form-create-container');
 const stateBadge = document.getElementById('current-state-badge');
-const taskState = document.getElementById('task-state');
 const taskList = document.getElementById('tasks');
 const addTaskButton = document.getElementById('add-task');
 const setupList = document.getElementById('setup');
 const addSetupButton = document.getElementById('add-setup');
 const breakList = document.getElementById('breaks');
 const addBreakButton = document.getElementById('add-break');
+
+// 2.1 Types of Blocks
+const deepWorkBlock = document.getElementById('deep-work');
+const routineBlock = document.getElementById('routine-block');
+const resetBlock = document.getElementById('reset-block');
+const rechargeBlock = document.getElementById('recharge-block');
+
+// 2.2 Define types for our blocks
+type Block = DeepWorkBlock | RoutineBlock | ResetBlock | RechargeBlock;
+type BlockType = 'deep' | 'routine' | 'reset' | 'recharge';
+const blockOrder: BlockType[] = ['deep', 'routine', 'reset', 'recharge'];
+let currentBlockType: BlockType = 'deep';
+let dailyTimeline: Block[] = [];
+
 
 // 3. Application State Flags
 let isCurrentlyPaused = false;
@@ -44,7 +90,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 async function handleSubmit(setup_list: string[], work_list: string[], break_list: string[]) {
 	try {
-		await invoke<void>("create_container", { setup: setup_list, tasks: work_list, breaks: break_list });
+		let index = await invoke<number>("get_next_order_index");
+		await invoke<void>("create_container", { setup: setup_list, tasks: work_list, breaks: break_list, order_index: index });
 	} catch (errorMessage) {
 		console.error("Command Failed: ", errorMessage);
 	}
@@ -126,6 +173,88 @@ function toggleDrawer() {
 	}
 }
 
+function updateFormLayout(type: BlockType) {
+  const tasksSection = document.getElementById('tasks-section');
+  const gridSection = document.getElementById('grid-section');
+  const setupSection = document.getElementById('setup-section');
+  const breakSection = document.getElementById('break-section');
+  const durationSection = document.getElementById('duration-section');
+
+  if (!tasksSection || !gridSection || !setupSection || !breakSection || !durationSection) return;
+
+  // Reset visibilities to baseline default
+  tasksSection.classList.remove('hidden');
+  gridSection.classList.remove('hidden');
+  setupSection.classList.remove('hidden');
+  breakSection.classList.remove('hidden');
+  durationSection.classList.add('hidden');
+
+  switch (type) {
+    case 'deep':
+      // Deep Work uses absolutely everything
+      break;
+
+    case 'routine':
+      // Setup + Tasks only. No break. Change grid style to span full width.
+      breakSection.classList.add('hidden');
+      setupSection.className = "flex flex-col gap-2 col-span-2"; // span full width
+      break;
+
+    case 'reset':
+      // Only Tasks. No setup, no breaks.
+      gridSection.classList.add('hidden');
+      break;
+
+    case 'recharge':
+      // No tasks, no phases. Only show max-time configuration.
+      tasksSection.classList.add('hidden');
+      gridSection.classList.add('hidden');
+      durationSection.classList.remove('hidden');
+      break;
+  }
+}
+
+function initBlockSelector() {
+  const overlay = document.getElementById('tab-overlay');
+
+	const buttons = [deepWorkBlock, routineBlock, resetBlock, rechargeBlock];
+  
+  buttons.forEach((button, index) => {
+    if (!button) return;
+
+    button.addEventListener('click', () => {
+			const selectedType = blockOrder[index];
+      currentBlockType = selectedType;
+      
+      // Handle the sliding overlay animation
+      if (overlay) {
+        overlay.className = "absolute top-1 bottom-1 left-1 w-[calc(25%-4px)] bg-indigo-600 rounded-md shadow-md transition-transform duration-300 ease-in-out transform z-0";
+        
+        if (index === 1) overlay.classList.add('translate-x-[100%]');
+        else if (index === 2) overlay.classList.add('translate-x-[200%]');
+        else if (index === 3) overlay.classList.add('translate-x-[300%]');
+        else overlay.classList.add('translate-x-0');
+      }
+
+      // Handle active/inactive text color toggling
+      buttons.forEach((btn) => {
+        if (btn) {
+          if (btn === button) {
+            btn.classList.add('text-slate-100');
+            btn.classList.remove('text-slate-400', 'hover:text-slate-200');
+          } else {
+            btn.classList.remove('text-slate-100');
+            btn.classList.add('text-slate-400', 'hover:text-slate-200');
+          }
+        }
+      });
+
+      // Dynamically re-structure the form layouts
+      updateFormLayout(selectedType);
+    });
+  });
+}
+
 function addTask() {
 	const newInput = document.createElement('input');
 	newInput.type = 'text';
@@ -134,7 +263,7 @@ function addTask() {
 	let n_str = String(task_number);
 	newInput.placeholder = n_str + '.';
 	newInput.className = "w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 placeholder:text-slate-500"
-	if (taskList) taskList.insertBefore(newInput, addTaskButton);
+	if (taskList) taskList.appendChild(newInput);
 }
 
 
@@ -151,7 +280,7 @@ function addSetup() {
 		newInput.placeholder = n_str + '.';
 	}
 	newInput.className = "w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 placeholder:text-slate-500"
-	if (setupList) setupList.insertBefore(newInput, addSetupButton);
+	if (setupList) setupList.appendChild(newInput);
 }
 
 
@@ -167,7 +296,7 @@ function addBreak() {
 		newInput.placeholder = n_str + '.';	
 	}
 	newInput.className = "w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 placeholder:text-slate-500";
-	if (breakList) breakList.insertBefore(newInput, addBreakButton);
+	if (breakList) breakList.appendChild(newInput);
 }
 
 // Attach Event Listeners to Buttons
@@ -176,6 +305,7 @@ if (toggleDrawerBtn) toggleDrawerBtn.addEventListener('click', toggleDrawer);
 if (addTaskButton) addTaskButton.addEventListener('click', addTask);
 if (addSetupButton) addSetupButton.addEventListener('click', addSetup);
 if (addBreakButton) addBreakButton.addEventListener('click', addBreak);
+
 
 // Intercept form submissions to extract data structures and deploy them to Go
 if (createForm) {
@@ -219,6 +349,7 @@ if (createForm) {
 	});
 }
 
-
-
-
+// At the very bottom of your script file:
+document.addEventListener('DOMContentLoaded', () => {
+  initBlockSelector();
+});

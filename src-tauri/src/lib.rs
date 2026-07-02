@@ -8,7 +8,7 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             tauri::async_runtime::block_on(async move {
-                let db_state = db::db_init(&app_handle)
+                let db_state = db::db_init()
                     .await
                     .expect("Failed to initialize DB!");
                 app_handle.manage(db_state);
